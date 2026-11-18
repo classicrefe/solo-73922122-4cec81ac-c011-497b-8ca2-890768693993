@@ -117,3 +117,30 @@ pre {
   background: #111827; color: #e5e7eb; padding: 16px; border-radius: 8px;
   overflow: auto; max-height: 480px; font-size: 12px;
 }
+.pill.warn { background: #fef3c7; color: #92400e; }
+.cmp-card {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-left: 4px solid #0f3d66;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+.cmp-card h3 { margin-top: 4px; }
+.cmp-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin: 8px 0;
+}
+.cmp-side {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.cmp-side h4 { margin: 0 0 6px; font-size: 14px; color: #0f3d66; }
+.cmp-side .hint { white-space: normal; word-break: break-all; }
+.cmp-empty { background: #fef2f2; border-color: #fecaca; }
+.cmp-changes { border-top: 1px dashed #d1d5db; padding-top: 8px; font-size: 13px; line-height: 1.8; }
+.cmp-changes b { color: #b45309; }

@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from .compare import ReportValidationError, build_comparison_report
 from .db import Database, StaleVersionError
 from .models import (
     ActiveInput,
@@ -91,6 +92,11 @@ class PublishPayload(BaseModel):
     preview_token: str
 
 
+class ComparePayload(BaseModel):
+    manifest_a: str = Field(min_length=1)
+    manifest_b: str = Field(min_length=1)
+
+
 # --------------------------------------------------------------------------- #
 # 异常处理
 # --------------------------------------------------------------------------- #
@@ -107,6 +113,15 @@ async def _splitter_handler(_request, exc: SplitterError):
 @app.exception_handler(StaleVersionError)
 async def _stale_handler(_request, exc: StaleVersionError):
     return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(ReportValidationError)
+async def _report_validation_handler(_request, exc: ReportValidationError):
+    # 快照不合格：拒绝生成报告（HTTP 422），不返回报告内容，也不触碰任何输入与清单
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "清单快照校验未通过，已拒绝生成对照报告。", "errors": exc.errors},
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -282,6 +297,32 @@ def manifest_download(manifest_id: str):
 @app.get("/api/version-log")
 def version_log():
     return {"current_version": db.get_version(), "log": db.version_log()}
+
+
+# --------------------------------------------------------------------------- #
+# 清单对照：两份持久化清单（允许已失效）按病例号比较训练/评估归属，
+# 再按同患者及亲属连通分量整理变化。纯只读：失败不返回报告，也不修改任何数据。
+# --------------------------------------------------------------------------- #
+@app.post("/api/compare")
+def compare_manifests(payload: ComparePayload):
+    if payload.manifest_a == payload.manifest_b:
+        raise HTTPException(status_code=400, detail="请选择两个不同的发布清单进行对照。")
+    # 读取失败（行损坏/JSON 无法解析等）：不返回报告，也不修改任何输入与清单
+    try:
+        manifest_a = db.get_manifest(payload.manifest_a)
+        manifest_b = db.get_manifest(payload.manifest_b)
+    except Exception as exc:  # sqlite3.Error / json.JSONDecodeError 等
+        raise HTTPException(
+            status_code=422,
+            detail=f"清单持久化数据读取失败，未生成对照报告：{exc}",
+        )
+    if manifest_a is None:
+        raise HTTPException(status_code=404, detail=f"旧版清单 {payload.manifest_a} 不存在。")
+    if manifest_b is None:
+        raise HTTPException(status_code=404, detail=f"新版清单 {payload.manifest_b} 不存在。")
+    # 读取成功但快照校验/一致性不通过 -> ReportValidationError -> 422，无报告返回
+    report = build_comparison_report(manifest_a, manifest_b)
+    return report
 
 
 # 静态前端（最后挂载，避免覆盖 /api 路由）

@@ -26,6 +26,7 @@
   <button class="tab" data-tab="solve">③ 求解与发布</button>
   <button class="tab" data-tab="manifests">④ 已发布清单</button>
   <button class="tab" data-tab="log">⑤ 版本记录</button>
+  <button class="tab" data-tab="compare">⑥ 清单对照</button>
 </nav>
 
 <!-- ======================= Tab 1 数据 ======================= -->
@@ -175,6 +176,45 @@
     <table id="logTable"><thead>
       <tr><th>版本</th><th>变动类型</th><th>详情</th><th>时间 (UTC)</th></tr>
     </thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ======================= Tab 6 清单对照 ======================= -->
+<section class="panel" id="tab-compare">
+  <h2>两次发布清单对照（训练/评估归属变化）</h2>
+  <p class="hint">选择两个已持久化的发布清单（<b>含已失效清单</b>），按病例号比较训练集/评估集归属，
+    再按同一患者及亲属关系的连通分量整理变化。报告为纯只读计算，不会修改任何输入与清单。
+    快照缺字段、病例重复或切分结果与快照不一致时将拒绝生成报告。</p>
+  <div class="row">
+    <label>旧版 A：
+      <select id="cmpA"></select>
+    </label>
+    <label>新版 B：
+      <select id="cmpB"></select>
+    </label>
+    <button class="primary" onclick="runCompare()">生成对照报告</button>
+    <span id="cmpMsg" class="msg"></span>
+  </div>
+
+  <div id="cmpResult" class="hidden">
+    <h2>对照结论总览</h2>
+    <div id="cmpMeta" class="hint"></div>
+    <div id="cmpSummary" class="grid4"></div>
+
+    <h2>病例级变化</h2>
+    <div class="table-wrap">
+      <table id="cmpCaseTable"><thead>
+        <tr><th>变化类型</th><th>病例号</th><th>患者号</th><th>标签</th>
+        <th>旧版 A 分组</th><th>新版 B 分组</th></tr>
+      </thead><tbody></tbody></table>
+    </div>
+
+    <h2>变化分量（按同患者/亲属连通关系整理）</h2>
+    <p class="hint">
+      <span class="pill dead">单纯分组变化</span> 成员与亲属边完全一致，仅训练/评估归属改变；
+      <span class="pill warn">连通范围变化</span> 成员集合、亲属边或分量合并/分裂发生改变。
+    </p>
+    <div id="cmpComponents"></div>
   </div>
 </section>
 
